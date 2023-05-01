@@ -1,48 +1,37 @@
-import { Component } from 'react';
-import { createPortal } from 'react-dom';
-import {MdOutlineClose} from 'react-icons/md';
+import { useEffect } from 'react';
+import { MdOutlineClose } from 'react-icons/md';
 import css from './Modal.module.css';
 
-const modalRoot = document.querySelector('#modal-root');
-class Modal extends Component {
+function Modal({ onClose, children }) {
+  useEffect(() => {
+    window.addEventListener('keydown', onKeyDown);
 
-  componentDidMount() {
-    window.addEventListener("keydown", this.onKeyDown);
-  }
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, []);
 
-  componentWillUnmount() {
-    window.removeEventListener("keydown", this.onKeyDown);
-  }
-
-  onKeyDown = (event) => {
-    if (event.code === "Escape") {
-      this.props.onClose();
+  const onKeyDown = event => {
+    if (event.code === 'Escape') {
+      onClose();
     }
   };
 
-  onBackdropClick = (event) => {
+  const onBackdropClick = event => {
     if (event.currentTarget === event.target) {
-      this.props.onClose();
+      onClose();
     }
   };
 
-  render() {
-    return createPortal(
-      <div className={css.overlay} onClick={this.onBackdropClick}>
-        <div className={css.modal}>
-        <button
-            type="button"
-            className={css.button}
-            onClick={this.props.onClose}
-          >
-            <MdOutlineClose fill="#140539"/>
-          </button>
-          {this.props.children}
-        </div>
-      </div>,
-      modalRoot
-    );
-  }
+  return (
+    <div className={css.overlay} onClick={onBackdropClick}>
+      <div className={css.modal}>
+        <button type="button" className={css.button} onClick={onClose}>
+          <MdOutlineClose fill="#140539" />
+        </button>
+        {children}
+      </div>
+    </div>
+  );
 }
-
 export default Modal;

@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Searchbar from './Searchbar';
@@ -9,129 +9,94 @@ import Button from './Button';
 import Modal from './Modal';
 import css from './App.module.css';
 
-export class App extends Component {
-  state = {
-    searchQuery: '',
-    images: [],
-    page: 1,
-    showModal: false,
-    urlModal: '',
-    isLoading: false,
-    error: '',
-    showLoadMore: false,
-    isEmpty: false,
-  };
+export function App() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [showModal, setShowModal] = useState(false);
+  const [urlModal, setUrlModal] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [showLoadMore, setShowLoadMore] = useState(false);
+  const [isEmpty, setIsEmpty] = useState(false);
 
-  handleGetImages(searchQuery, page) {
-    this.setState({ isLoading: true });
+  useEffect(() => {
+    if (!searchQuery) {
+      return;
+    }
+    setIsLoading(true);
     api
       .getImg(searchQuery, page)
       .then(({ hits, totalHits }) => {
         if (!hits.length) {
-          this.setState({
-            isEmpty: true,
-          });
+          setIsEmpty(true);
           return;
         }
-        this.setState({
-          images: [...this.state.images, ...hits],
-          showLoadMore: this.state.page < Math.ceil(totalHits / 12),
-        });
+        setImages(images => [...images, ...hits]);
+        setShowLoadMore(() => page < Math.ceil(totalHits / 12));
       })
       .catch(error => {
-        this.setState({ error: `${error}` });
+        setError(`${error}`);
       })
-      .finally(() => this.setState({ isLoading: false }));
-  }
+      .finally(() => setIsLoading(false));
+  }, [searchQuery, page]);
 
-  componentDidUpdate(prevProps, prevState) {
-    const prevQuery = prevState.searchQuery;
-    const newQuery = this.state.searchQuery;
-    const prevPage = prevState.page;
-    const newPage = this.state.page;
-
-    if (prevQuery !== newQuery || prevPage !== newPage) {
-      this.handleGetImages(newQuery, newPage);
-    }
-  }
-
-  openModal = url => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-      urlModal: url,
-    }));
+  const openModal = url => {
+    setShowModal(!showModal);
+    setUrlModal(url);
   };
 
-  closeModal = () => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-      urlModal: '',
-    }));
+  const closeModal = () => {
+    setShowModal(!showModal);
+    setUrlModal('');
   };
 
-  toggleOnLoading = () => {
-    this.setState(({ isLoading }) => ({ isLoading: !isLoading }));
+  const toggleOnLoading = () => {
+    setIsLoading(!isLoading);
   };
 
-  handleFormSubmit = query => {
-    this.setState({
-      searchQuery: query,
-      images: [],
-      page: 1,
-      showLoadMore: false,
-      status: 'loading',
-      isEmpty: false,
-      error: '',
-    });
+  const handleFormSubmit = query => {
+    setSearchQuery(query);
+    setImages([]);
+    setPage(1);
+    setShowLoadMore(false);
+    setIsEmpty(false);
+    setError('');
   };
 
-  onLoadMore = () => {
-    this.setState(({ page }) => ({ page: page + 1 }));
+  const onLoadMore = () => {
+    setPage(page => page + 1);
   };
 
-  render() {
-    const {
-      searchQuery,
-      images,
-      showModal,
-      error,
-      isLoading,
-      urlModal,
-      showLoadMore,
-      isEmpty,
-    } = this.state;
+  return (
+    <div className={css.container}>
+      <ToastContainer autoClose={2000} />
+      <Searchbar onSubmit={handleFormSubmit} />
 
-    return (
-      <div className={css.container}>
-        <ToastContainer autoClose={2000} />
-        <Searchbar onSubmit={this.handleFormSubmit} />
+      {isEmpty && (
+        <h2 className={css.errorMsg}>
+          Sorry, there is no images for {searchQuery}
+        </h2>
+      )}
+      {error && <h2 className={css.errorMsg}>{error}</h2>}
+      <ImageGallery
+        images={images}
+        openModal={openModal}
+        toggleOnLoading={toggleOnLoading}
+      />
+      {showLoadMore && <Button onLoadMore={onLoadMore} />}
+      {isLoading && <Loader />}
 
-        {isEmpty && (
-          <h2 className={css.errorMsg}>
-            Sorry, there is no images for {searchQuery}
-          </h2>
-        )}
-        {error && <h2 className={css.errorMsg}>{error}</h2>}
-        <ImageGallery
-          images={images}
-          openModal={this.openModal}
-          toggleOnLoading={this.toggleOnLoading}
-        />
-        {showLoadMore && <Button onLoadMore={this.onLoadMore} />}
-        {isLoading && <Loader />}
-
-        {showModal && (
-          <Modal onClose={this.closeModal}>
-            {/* {isLoading && <Loader />} */}
-            <img
-              onLoad={this.toggleOnLoading}
-              src={urlModal}
-              alt=""
-              className={css.modalImg}
-            />
-          </Modal>
-        )}
-      </div>
-    );
-  }
+      {showModal && (
+        <Modal onClose={closeModal}>
+          <img
+            onLoad={toggleOnLoading}
+            src={urlModal}
+            alt=""
+            className={css.modalImg}
+          />
+        </Modal>
+      )}
+    </div>
+  );
 }
