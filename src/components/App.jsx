@@ -52,7 +52,7 @@ export function App() {
   };
 
   const toggleOnLoading = () => {
-    setIsLoading(!isLoading);
+    setIsLoading(isLoading => !isLoading);
   };
 
   const handleFormSubmit = query => {

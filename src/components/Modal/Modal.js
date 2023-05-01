@@ -4,18 +4,17 @@ import css from './Modal.module.css';
 
 function Modal({ onClose, children }) {
   useEffect(() => {
+    const onKeyDown = event => {
+      if (event.code === 'Escape') {
+        onClose();
+      }
+    };
     window.addEventListener('keydown', onKeyDown);
 
     return () => {
       window.removeEventListener('keydown', onKeyDown);
     };
-  });
-
-  const onKeyDown = event => {
-    if (event.code === 'Escape') {
-      onClose();
-    }
-  };
+  }, [onClose]);
 
   const onBackdropClick = event => {
     if (event.currentTarget === event.target) {
